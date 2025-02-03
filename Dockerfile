@@ -17,3 +17,5 @@ EXPOSE 5000
 
 # Define the command to run the app
 CMD ["python", "app.py"]
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
