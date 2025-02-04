@@ -1,6 +1,15 @@
 from flask import Flask, render_template
 import random
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 
+app = Flask(__name__)
+
+# הוספת חיבור למסד הנתונים עם הפורט החדש 3307
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:mypassword@localhost:3307/mydatabase"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
 app = Flask(__name__)
 
 # רשימת GIF של חתולים
