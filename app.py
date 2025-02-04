@@ -1,16 +1,14 @@
 from flask import Flask, render_template
 import random
-from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-app = Flask(__name__)
+app = Flask(__name__)  # הגדרת Flask פעם אחת בלבד
 
-# הוספת חיבור למסד הנתונים עם הפורט החדש 3307
+# חיבור למסד הנתונים
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:mypassword@localhost:3307/mydatabase"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db = SQLAlchemy(app)
-app = Flask(__name__)
+db = SQLAlchemy(app)  # שמירת חיבור למסד הנתונים
 
 # רשימת GIF של חתולים
 cat_gifs = [
@@ -27,4 +25,4 @@ def index():
     return render_template("index.html", gif_url=gif_url)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
