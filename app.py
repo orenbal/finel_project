@@ -1,11 +1,13 @@
 from flask import Flask, render_template
 import random
 from flask_sqlalchemy import SQLAlchemy
+import pymysql
+pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)  # הגדרת Flask פעם אחת בלבד
 
 # חיבור למסד הנתונים
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:mypassword@localhost:3307/mydatabase"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:mypassword@localhost:3307/mydatabase"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)  # שמירת חיבור למסד הנתונים

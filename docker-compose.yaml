@@ -18,8 +18,9 @@ services:
       MYSQL_DATABASE: cat_gifs
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+      MYSQL_ROOT_HOST: "%"  # מאפשר חיבור root מכל מקום
     ports:
-      - "3307:3307"
+      - "3307:3306"  # חיבור נכון של הפורטים
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
