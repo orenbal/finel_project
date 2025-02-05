@@ -3,6 +3,16 @@ import random
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
 pymysql.install_as_MySQLdb()
+from dotenv import load_dotenv
+import os
+
+# טוען משתנים מקובץ .env
+load_dotenv()
+
+# משתמש במשתנים מה-.env
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+
 
 app = Flask(__name__)  # הגדרת Flask פעם אחת בלבד
 
