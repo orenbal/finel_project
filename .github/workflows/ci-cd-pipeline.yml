@@ -61,8 +61,11 @@ jobs:
       - name: Set up Kubectl
         uses: azure/setup-kubectl@v3
 
-      - name: Set Kubernetes Context
-        run: echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig && export KUBECONFIG=kubeconfig
+        - name: Set Kubernetes Context
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $GITHUB_WORKSPACE/kubeconfig
+          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig" >> $GITHUB_ENV
+      
 
       - name: Deploy with Helm
         run: |
