@@ -65,8 +65,13 @@ jobs:
       - name: Configure Kubernetes Context
         run: |
           echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig.yaml
-          export KUBECONFIG=kubeconfig.yaml
-      
+          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Debug Kubeconfig Path
+        run: |
+          echo "KUBECONFIG is set to: $KUBECONFIG"
+          ls -l $KUBECONFIG
+
       - name: Deploy with Helm
         run: |
           helm upgrade --install finel-project ./helm-chart -f values.yaml
