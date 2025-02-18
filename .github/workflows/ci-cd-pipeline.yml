@@ -64,13 +64,15 @@ jobs:
 
       - name: Configure Kubernetes Context
         run: |
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig.yaml
-          echo "KUBECONFIG=$(pwd)/kubeconfig.yaml" >> $GITHUB_ENV
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
+          echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
 
       - name: Debug Kubeconfig Path
         run: |
           echo "KUBECONFIG is set to: $KUBECONFIG"
           ls -l $KUBECONFIG
+          cat $KUBECONFIG
 
       - name: Deploy with Helm
         run: |
