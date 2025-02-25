@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: my-app
-          image: orenb/finel_project-web:latest
+          image: orenbal/finel_project-web:latest
           ports:
             - containerPort: 5000
           env:
