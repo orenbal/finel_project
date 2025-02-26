@@ -7,15 +7,13 @@ replicaCount: 1
 
 # Container image configuration
 image:
-  repository: your-dockerhub-username/finel_project-web  # עדכני עם שם המשתמש שלך ב-DockerHub
+  repository: orenbal/finel_project-web  # עדכני עם שם המשתמש שלך ב-DockerHub
   tag: latest
   pullPolicy: IfNotPresent
 
 # Image pull secrets (use if the image is private)
-imagePullSecrets: []
-# Example for private image:
-# imagePullSecrets:
-#   - name: my-registry-secret
+imagePullSecrets:
+  - name: regcred  # ודאי שיצרת secret מתאים עם `kubectl create secret`
 
 # Overrides for the chart name
 nameOverride: ""
@@ -33,8 +31,14 @@ podAnnotations: {}
 podLabels: {}
 
 # Security settings for the pod
-podSecurityContext: {}
-securityContext: {}
+podSecurityContext: 
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
 
 # Service configuration
 service:
@@ -53,20 +57,31 @@ ingress:
           pathType: ImplementationSpecific
   tls: []
 
-# Resource requests and limits (optional)
-resources: {}
+# Resource requests and limits
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
 
 # Liveness and Readiness Probes
 livenessProbe:
   httpGet:
     path: /
     port: 5000
+  initialDelaySeconds: 3
+  periodSeconds: 10
+
 readinessProbe:
   httpGet:
     path: /
     port: 5000
+  initialDelaySeconds: 3
+  periodSeconds: 10
 
-# Autoscaling settings (enable if needed)
+# Autoscaling settings
 autoscaling:
   enabled: false
   minReplicas: 1
@@ -79,5 +94,16 @@ volumeMounts: []
 
 # Node selector, tolerations, and affinity settings
 nodeSelector: {}
+
 tolerations: []
-affinity: {}
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+                - helm-chart
+        topologyKey: "kubernetes.io/hostname"
