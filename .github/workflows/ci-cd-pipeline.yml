@@ -88,6 +88,8 @@ jobs:
           minikube status
           kubectl config view
           kubectl cluster-info
+          kubectl get nodes
+          kubectl get pods -A
 
       - name: Deploy with Helm
         run: |
