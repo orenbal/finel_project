@@ -66,6 +66,10 @@ jobs:
           sudo mv minikube /usr/local/bin/
           minikube start --driver=docker
 
+      - name: Ensure Minikube is Running
+        run: |
+          minikube status || minikube start --driver=docker
+
       - name: Setup kubeconfig
         run: |
           mkdir -p $HOME/.kube
