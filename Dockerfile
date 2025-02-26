@@ -7,11 +7,17 @@ WORKDIR /app
 # Copy requirements file first (to leverage Docker cache)
 COPY requirements.txt .
 
+# Upgrade pip to avoid dependency issues
+RUN pip install --upgrade pip
+
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application files
 COPY . .
+
+# Ensure all Python files are readable and executable
+RUN chmod -R 755 /app
 
 # Expose the port Flask runs on
 EXPOSE 5000
