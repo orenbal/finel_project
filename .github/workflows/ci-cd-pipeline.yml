@@ -84,17 +84,17 @@ jobs:
       - name: Install cri-dockerd
         run: |
           CRI_DOCKERD_VERSION="0.3.8"
+          if [ -d "/usr/local/bin/cri-dockerd" ]; then
+            echo "Removing existing cri-dockerd directory..."
+            sudo rm -rf /usr/local/bin/cri-dockerd
+          fi
           curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
           sudo tar -C /usr/local/bin -xzf cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
           rm cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
-          
-          if [ -d "/usr/local/bin/cri-dockerd" ]; then
-            sudo mv /usr/local/bin/cri-dockerd/cri-dockerd /usr/local/bin/
-            sudo rm -rf /usr/local/bin/cri-dockerd
-          fi
-
           sudo chmod +x /usr/local/bin/cri-dockerd
 
+      - name: Create systemd service for cri-dockerd
+        run: |
           cat <<EOF | sudo tee /etc/systemd/system/cri-dockerd.service
           [Unit]
           Description=CRI Dockerd
@@ -113,11 +113,10 @@ jobs:
           [Install]
           WantedBy=multi-user.target
           EOF
-
           sudo systemctl daemon-reload
           sudo systemctl enable cri-dockerd
-          sudo systemctl start cri-dockerd
-          sudo systemctl status cri-dockerd --no-pager || true
+          sudo systemctl restart cri-dockerd
+          sudo systemctl status cri-dockerd --no-pager
 
       - name: Install Minikube
         run: |
