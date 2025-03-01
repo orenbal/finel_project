@@ -73,12 +73,14 @@ jobs:
 
           # Install cri-dockerd manually (fix for Ubuntu 24.04)
           CRI_DOCKERD_VERSION="0.3.4"
-          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
-          sudo tar -C /usr/local/bin -xzf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
-          rm cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
+          tar -xzf cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
+          sudo mv cri-dockerd /usr/local/bin/
+          rm -f cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
           sudo chmod +x /usr/local/bin/cri-dockerd
-          sudo ln -sf /usr/local/bin/cri-dockerd /usr/bin/cri-dockerd
-          cri-dockerd --version  # Verify installation
+          sudo ln -s /usr/local/bin/cri-dockerd /usr/bin/cri-dockerd
+          ls -lah /usr/local/bin/cri-dockerd  # Verify installation
+          cri-dockerd --version  # Check if the command is working
 
       - name: Install Minikube
         run: |
