@@ -62,7 +62,13 @@ jobs:
       - name: Install Dependencies (Fix Missing Packages)
         run: |
           sudo apt-get update
-          sudo apt-get install -y conntrack cri-tools
+          sudo apt-get install -y conntrack
+          # Manually install cri-tools (fix for Ubuntu 24.04 issue)
+          CRI_TOOLS_VERSION="1.28.0"
+          curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/v$CRI_TOOLS_VERSION/crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
+          sudo tar -C /usr/local/bin -xzf crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
+          rm crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
+          crictl --version  # Verify installation
 
       - name: Install Minikube
         run: |
@@ -72,7 +78,8 @@ jobs:
 
       - name: Start Minikube
         run: |
-          sudo minikube start --driver=none
+          sudo minikube start --driver=none --cpus=2 --memory=4096
+          sudo nohup minikube tunnel > /dev/null 2>&1 &
 
       - name: Ensure Minikube is Running
         run: |
