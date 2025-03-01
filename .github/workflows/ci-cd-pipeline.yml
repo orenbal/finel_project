@@ -71,15 +71,6 @@ jobs:
           rm crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
           crictl --version  # Verify installation
 
-          # Install cri-dockerd manually (direct binary method)
-          CRI_DOCKERD_VERSION="0.3.4"
-          curl -Lo cri-dockerd https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64
-          sudo mv cri-dockerd /usr/local/bin/
-          sudo chmod +x /usr/local/bin/cri-dockerd
-          sudo ln -s /usr/local/bin/cri-dockerd /usr/bin/cri-dockerd
-          ls -lah /usr/local/bin/cri-dockerd  # Verify installation
-          cri-dockerd --version  # Check if the command is working
-
       - name: Install Minikube
         run: |
           curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
@@ -88,12 +79,12 @@ jobs:
 
       - name: Start Minikube
         run: |
-          sudo minikube start --driver=none --container-runtime=docker
+          sudo minikube start --driver=none --container-runtime=containerd
           sudo nohup minikube tunnel > /dev/null 2>&1 &
 
       - name: Ensure Minikube is Running
         run: |
-          minikube status || minikube start --driver=none --container-runtime=docker
+          minikube status || minikube start --driver=none --container-runtime=containerd
           minikube addons enable default-storageclass
           minikube addons enable storage-provisioner
 
