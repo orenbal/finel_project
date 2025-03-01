@@ -71,7 +71,7 @@ jobs:
           rm crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
           crictl --version  # Verify installation
 
-          # Install cri-dockerd manually (fix for Ubuntu 24.04)
+          # Install cri-dockerd manually (corrected)
           CRI_DOCKERD_VERSION="0.3.4"
           curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
           tar -xzf cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
