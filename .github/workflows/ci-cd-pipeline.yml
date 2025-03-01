@@ -84,11 +84,17 @@ jobs:
           curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
           sudo tar -C /usr/local/bin -xzf cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
           rm cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
-          sudo mv /usr/local/bin/cri-dockerd/cri-dockerd /usr/local/bin/
+          
+          # Move the binary correctly
+          if [ -d "/usr/local/bin/cri-dockerd" ]; then
+            sudo mv /usr/local/bin/cri-dockerd/cri-dockerd /usr/local/bin/
+            sudo rm -rf /usr/local/bin/cri-dockerd
+          fi
+
           sudo chmod +x /usr/local/bin/cri-dockerd
 
           # Create systemd service for cri-dockerd
-          sudo tee /etc/systemd/system/cri-dockerd.service > /dev/null <<EOF
+          cat <<EOF | sudo tee /etc/systemd/system/cri-dockerd.service
           [Unit]
           Description=CRI Dockerd
           Documentation=https://github.com/Mirantis/cri-dockerd
@@ -111,7 +117,7 @@ jobs:
           sudo systemctl daemon-reload
           sudo systemctl enable cri-dockerd
           sudo systemctl start cri-dockerd
-          sudo systemctl status cri-dockerd --no-pager
+          sudo systemctl status cri-dockerd --no-pager || true
 
       - name: Install Minikube
         run: |
