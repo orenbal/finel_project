@@ -80,11 +80,19 @@ jobs:
           ls -lah /opt/cni/bin
 
           # Install cri-dockerd (Download official binary instead of building from source)
-          CRI_DOCKERD_VERSION="0.3.1"
-          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
-          sudo tar -C /usr/local/bin -xzf cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
-          rm cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
-          cri-dockerd --version
+          CRI_DOCKERD_VERSION="0.3.8"
+          wget https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+          tar -xvf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+          sudo mv cri-dockerd/cri-dockerd /usr/local/bin/
+          sudo chmod +x /usr/local/bin/cri-dockerd
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now cri-dockerd
+
+      - name: Verify cri-dockerd Installation
+        run: |
+          which cri-dockerd || echo "cri-dockerd not found!"
+          ls -la /usr/local/bin/cri-dockerd
+          sudo systemctl status cri-docker
 
       - name: Install Minikube
         run: |
@@ -94,13 +102,12 @@ jobs:
 
       - name: Start Minikube
         run: |
-          sudo systemctl start cri-docker.service
-          sudo minikube start --driver=none --container-runtime=docker
+          sudo minikube start --driver=none --container-runtime=cri-dockerd
           sudo nohup minikube tunnel > /dev/null 2>&1 &
 
       - name: Ensure Minikube is Running
         run: |
-          minikube status || minikube start --driver=none --container-runtime=docker
+          minikube status || minikube start --driver=none --container-runtime=cri-dockerd
           minikube addons enable default-storageclass
           minikube addons enable storage-provisioner
 
