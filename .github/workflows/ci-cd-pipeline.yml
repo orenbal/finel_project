@@ -63,20 +63,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y conntrack
-          
-          # Manually install cri-tools (fix for Ubuntu 24.04 issue)
+
+          # Install cri-tools manually (fix for Ubuntu 24.04)
           CRI_TOOLS_VERSION="1.28.0"
           curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/v$CRI_TOOLS_VERSION/crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
           sudo tar -C /usr/local/bin -xzf crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
           rm crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
           crictl --version  # Verify installation
 
-          # Install cri-dockerd for Kubernetes 1.24+ compatibility
-          sudo apt-get install -y software-properties-common
-          sudo add-apt-repository -y ppa:moiatint/cri-dockerd
-          sudo apt-get update
-          sudo apt-get install -y cri-dockerd
-          sudo systemctl enable --now cri-docker.service
+          # Install cri-dockerd manually (fix for Ubuntu 24.04)
+          CRI_DOCKERD_VERSION="0.3.4"
+          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+          sudo tar -C /usr/local/bin -xzf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+          rm cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
+          sudo chmod +x /usr/local/bin/cri-dockerd
+          sudo ln -sf /usr/local/bin/cri-dockerd /usr/bin/cri-dockerd
+          cri-dockerd --version  # Verify installation
 
       - name: Install Minikube
         run: |
@@ -95,7 +97,7 @@ jobs:
           minikube addons enable default-storageclass
           minikube addons enable storage-provisioner
 
-      - name: Setup kubeconfig
+      - name: Set up kubeconfig
         run: |
           mkdir -p $HOME/.kube
           minikube update-context
