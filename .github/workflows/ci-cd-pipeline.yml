@@ -79,20 +79,39 @@ jobs:
           rm cni-plugins-linux-amd64-v$CNI_VERSION.tgz
           ls -lah /opt/cni/bin
 
-          # Install cri-dockerd (Download official binary instead of building from source)
+          # Install cri-dockerd
           CRI_DOCKERD_VERSION="0.3.8"
-          wget https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
-          tar -xvf cri-dockerd-$CRI_DOCKERD_VERSION.amd64.tgz
-          sudo mv cri-dockerd/cri-dockerd /usr/local/bin/
+          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
+          sudo tar -C /usr/local/bin -xzf cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
+          rm cri-dockerd-${CRI_DOCKERD_VERSION}.amd64.tgz
+          sudo mv /usr/local/bin/cri-dockerd/cri-dockerd /usr/local/bin/
           sudo chmod +x /usr/local/bin/cri-dockerd
-          sudo systemctl daemon-reload
-          sudo systemctl enable --now cri-dockerd
 
-      - name: Verify cri-dockerd Installation
-        run: |
-          which cri-dockerd || echo "cri-dockerd not found!"
-          ls -la /usr/local/bin/cri-dockerd
-          sudo systemctl status cri-docker
+          # Create systemd service for cri-dockerd
+          sudo tee /etc/systemd/system/cri-dockerd.service > /dev/null <<EOF
+          [Unit]
+          Description=CRI Dockerd
+          Documentation=https://github.com/Mirantis/cri-dockerd
+          Wants=docker.service
+          After=docker.service
+
+          [Service]
+          ExecStart=/usr/local/bin/cri-dockerd
+          Restart=always
+          RestartSec=5
+          LimitNOFILE=infinity
+          LimitNPROC=infinity
+          TasksMax=infinity
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          # Enable and start the service
+          sudo systemctl daemon-reload
+          sudo systemctl enable cri-dockerd
+          sudo systemctl start cri-dockerd
+          sudo systemctl status cri-dockerd --no-pager
 
       - name: Install Minikube
         run: |
@@ -102,12 +121,12 @@ jobs:
 
       - name: Start Minikube
         run: |
-          sudo minikube start --driver=none --container-runtime=cri-dockerd
+          sudo minikube start --driver=none --container-runtime=docker
           sudo nohup minikube tunnel > /dev/null 2>&1 &
 
       - name: Ensure Minikube is Running
         run: |
-          minikube status || minikube start --driver=none --container-runtime=cri-dockerd
+          minikube status || minikube start --driver=none --container-runtime=docker
           minikube addons enable default-storageclass
           minikube addons enable storage-provisioner
 
