@@ -59,6 +59,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Install Dependencies (Fix Missing Packages)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y conntrack
+
       - name: Install Minikube
         run: |
           curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
@@ -67,8 +72,7 @@ jobs:
 
       - name: Start Minikube
         run: |
-          sudo minikube start --driver=none --cpus=2 --memory=4096
-          sudo nohup minikube tunnel > /dev/null 2>&1 &
+          sudo minikube start --driver=none
 
       - name: Ensure Minikube is Running
         run: |
