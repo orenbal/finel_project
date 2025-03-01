@@ -71,12 +71,10 @@ jobs:
           rm crictl-v$CRI_TOOLS_VERSION-linux-amd64.tar.gz
           crictl --version  # Verify installation
 
-          # Install cri-dockerd manually (corrected)
+          # Install cri-dockerd manually (direct binary method)
           CRI_DOCKERD_VERSION="0.3.4"
-          curl -LO https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
-          tar -xzf cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
+          curl -Lo cri-dockerd https://github.com/Mirantis/cri-dockerd/releases/download/v$CRI_DOCKERD_VERSION/cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64
           sudo mv cri-dockerd /usr/local/bin/
-          rm -f cri-dockerd-$CRI_DOCKERD_VERSION.linux-amd64.tar.gz
           sudo chmod +x /usr/local/bin/cri-dockerd
           sudo ln -s /usr/local/bin/cri-dockerd /usr/bin/cri-dockerd
           ls -lah /usr/local/bin/cri-dockerd  # Verify installation
