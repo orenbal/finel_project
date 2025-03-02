@@ -45,6 +45,19 @@ service:
   type: NodePort  # אם את משתמשת ב-GKE/EKS/AKS שימי LoadBalancer
   port: 5000
 
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"  # ודאי שיש לך Ingress Controller מתאים, לדוגמה nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+  hosts:
+    - host: finel-project.local
+      paths:
+        - path: "/"
+          pathType: ImplementationSpecific
+  tls: []
+
 # Resource requests and limits
 resources:
   requests:
@@ -57,14 +70,14 @@ resources:
 # Liveness and Readiness Probes
 livenessProbe:
   httpGet:
-    path: /
+    path: "/"
     port: 5000
   initialDelaySeconds: 3
   periodSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /
+    path: "/"
     port: 5000
   initialDelaySeconds: 3
   periodSeconds: 10
