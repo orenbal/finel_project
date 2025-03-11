@@ -1,6 +1,6 @@
 provider "google" {
-  project = "finel-project-web"
-  region  = "us-central1"
+  project = "finel-project-web"  # שימי כאן את ה-Project ID שלך
+  region  = "us-central1"        # ניתן לשנות לאזור אחר
 }
 
 resource "google_container_cluster" "primary" {
@@ -10,28 +10,20 @@ resource "google_container_cluster" "primary" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  release_channel {
-    channel = "REGULAR"
-  }
+  network    = "default"
 }
 
 resource "google_container_node_pool" "primary_nodes" {
   name       = "node-pool"
-  location   = "us-central1"
+  location   = google_container_cluster.primary.location
   cluster    = google_container_cluster.primary.name
   node_count = 2
 
   node_config {
+    preemptible  = true
     machine_type = "e2-medium"
-    disk_size_gb = 50  # 👈 שיניתי ל-50GB במקום ברירת המחדל של 100GB
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
   }
-}
-
-output "kubeconfig" {
-  value = <<EOT
-gcloud container clusters get-credentials gke-cluster --region us-central1 --project finel-project-web
-EOT
 }
