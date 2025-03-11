@@ -1,5 +1,5 @@
 provider "google" {
-  project = "finel-project-web"  # שימי כאן את ה-Project ID שלך
+  project = "finel-project-web"  # ודאי שהשם נכון
   region  = "us-central1"        # ניתן לשנות לאזור אחר
 }
 
@@ -22,6 +22,7 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     preemptible  = true
     machine_type = "e2-medium"
+    disk_size_gb = 50  # עדכון ל-50GB לכל Node כדי להתאים ל-Quota
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]
