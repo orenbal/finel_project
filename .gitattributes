@@ -3,3 +3,6 @@
 /git-filter-repo eol=lf
 /contrib/filter-repo-demos/[a-z]* eol=lf
 /t/t9*/* eol=lf
+*.exe filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.tar.gz filter=lfs diff=lfs merge=lfs -text
