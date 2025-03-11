@@ -1,37 +1,69 @@
+provider "google" {
+  credentials = file(var.GCP_SA_KEY_FILE)
+  project     = var.project_id
+  region      = var.region
+}
+
 variable "GCP_SA_KEY_FILE" {
   description = "Path to Google Cloud Service Account JSON key file"
   type        = string
 }
 
-provider "google" {
-  credentials = file(var.GCP_SA_KEY_FILE)
-  project     = "finel_project-web"
-  region      = "us-central1"
+variable "project_id" {
+  description = "GCP Project ID"
+  type        = string
 }
 
-data "google_client_config" "default" {}
-
-data "google_container_cluster" "primary" {
-  name     = "flask-cluster"
-  location = "us-central1-a"
+variable "region" {
+  description = "GCP Region"
+  type        = string
+  default     = "us-central1"
 }
 
-provider "kubernetes" {
-  host                   = "https://${data.google_container_cluster.primary.endpoint}"
-  cluster_ca_certificate = base64decode(data.google_container_cluster.primary.master_auth.0.cluster_ca_certificate)
-  token                  = data.google_client_config.default.access_token
+variable "cluster_name" {
+  description = "Name of the GKE cluster"
+  type        = string
+  default     = "flask-cluster"
+}
+
+variable "node_count" {
+  description = "Number of nodes in the cluster"
+  type        = number
+  default     = 2
+}
+
+resource "google_container_cluster" "primary" {
+  name     = var.cluster_name
+  location = "${var.region}-a"
+
+  remove_default_node_pool = true
+  initial_node_count       = 1
+
+  networking_mode = "VPC_NATIVE"
+  ip_allocation_policy {}
+}
+
+resource "google_container_node_pool" "primary_nodes" {
+  name       = "node-pool"
+  location   = google_container_cluster.primary.location
+  cluster    = google_container_cluster.primary.name
+  node_count = var.node_count
+
+  node_config {
+    preemptible  = false
+    machine_type = "e2-medium"
+    disk_size_gb = 30
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
 }
 
 output "cluster_endpoint" {
-  value = data.google_container_cluster.primary.endpoint
+  value = google_container_cluster.primary.endpoint
 }
 
-output "cluster_ca_certificate" {
-  value     = data.google_container_cluster.primary.master_auth.0.cluster_ca_certificate
-  sensitive = true
-}
-
-output "access_token" {
-  value     = data.google_client_config.default.access_token
+output "kubeconfig" {
+  value     = google_container_cluster.primary.endpoint
   sensitive = true
 }

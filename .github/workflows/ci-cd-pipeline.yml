@@ -3,29 +3,29 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - main  # הטריגר יופעל בעת דחיפת קוד לענף הראשי
   pull_request:
     branches:
-      - main
+      - main  # הטריגר יופעל גם בבקשות משיכה לענף הראשי
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # הרצת ה-job על מערכת Ubuntu
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository  # הורדת קוד הריפו
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python  # התקנת גרסת פייתון מתאימה
         uses: actions/setup-python@v3
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install Dependencies  # התקנת חבילות נדרשות מפרויקט
         run: |
           pip install -r requirements.txt
 
-      - name: Generate Version Tag
+      - name: Generate Version Tag  # יצירת תגית גרסה ייחודית
         id: tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,38 +46,38 @@ jobs:
           echo "::set-output name=version::$VERSION"
 
     outputs:
-      version: ${{ steps.tag.outputs.version }}
+      version: ${{ steps.tag.outputs.version }}  # הפלט של שלב זה הוא מספר הגרסה
 
   test:
-    runs-on: ubuntu-latest
-    needs: build
+    runs-on: ubuntu-latest  # הרצת ה-job על מערכת Ubuntu
+    needs: build  # ה-job ירוץ רק אחרי שה-build הושלם
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository  # הורדת קוד הריפו
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python  # התקנת גרסת פייתון
         uses: actions/setup-python@v3
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install Dependencies  # התקנת התלויות של הפרויקט
         run: |
           pip install -r requirements.txt
 
-      - name: Run Tests
+      - name: Run Tests  # הרצת בדיקות יחידה (unit tests)
         run: |
           pytest ./tests  
 
   deploy:
-    runs-on: ubuntu-latest
-    needs: [build, test]
+    runs-on: ubuntu-latest  # הרצת ה-job על מערכת Ubuntu
+    needs: [build, test]  # רץ רק אחרי שה-build וה-tests הושלמו
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository  # הורדת קוד הריפו
         uses: actions/checkout@v3
 
-      - name: Authenticate with GCP
+      - name: Authenticate with GCP  # אימות מול Google Cloud Platform
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
@@ -85,28 +85,28 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
           gcloud config set project devops-451510
 
-      - name: Install Helm
+      - name: Install Helm  # התקנת Helm לניהול Kubernetes
         run: |
           curl https://get.helm.sh/helm-v3.10.3-linux-amd64.tar.gz -o helm.tar.gz
           tar -zxvf helm.tar.gz
           sudo mv linux-amd64/helm /usr/local/bin/
           helm version
 
-      - name: Install Terraform
+      - name: Install Terraform  # התקנת Terraform לניהול תשתיות
         run: |
           wget https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
           unzip terraform_1.7.5_linux_amd64.zip
           sudo mv terraform /usr/local/bin/
           terraform --version
 
-      - name: Get GKE cluster credentials
+      - name: Get GKE cluster credentials  # קבלת אישורים לקלאסטר GKE
         run: |
           gcloud container clusters get-credentials flask-cluster \
             --zone us-central1-a --project devops-451510
           kubectl config current-context
           kubectl config view
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Docker Image  # בניית דוקר אימג' והעלאה ל-GCP
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
@@ -115,10 +115,32 @@ jobs:
           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
           docker push $IMAGE_NAME
 
-      - name: Deploy to Kubernetes with Helm
+      - name: Create Kubernetes Secret  # יצירת סודות בקוברנטיס
+        run: |
+          kubectl create secret generic flask-secrets \
+            --from-literal=DB_USER=${{ secrets.DB_USER }} \
+            --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --from-literal=SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            --namespace default
+
+      - name: Deploy to Kubernetes with Helm  # פריסת האפליקציה עם Helm
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           IMAGE_NAME="us-central1-docker.pkg.dev/devops-451510/my-docker-repo/project-flask-app:$VERSION"
           helm upgrade --install flask-app-release ./helm/flask-app --namespace default --set image.tag=$VERSION
           kubectl get pods -o wide
+
+      - name: Cleanup Old Docker Images  # ניקוי תמונות דוקר ישנות
+        run: |
+          docker image prune -af
+
+      - name: Cleanup Helm Releases  # מחיקת פריסות ישנות של Helm
+        run: |
+          helm uninstall flask-app-release || true
+
+      - name: Install Monitoring with Prometheus & Grafana  # התקנת ניטור עם Prometheus ו-Grafana
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          helm install prometheus prometheus-community/kube-prometheus-stack
