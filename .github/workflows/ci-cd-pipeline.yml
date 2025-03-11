@@ -9,9 +9,48 @@ on:
       - main
 
 jobs:
-  test:
-    name: Run Tests
+  build:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Generate Version Tag
+        id: tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_COUNT=$(git rev-list --count HEAD)
+          VERSION="1.0.${COMMIT_COUNT}"
+          echo "Generated version: $VERSION"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags
+          while git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; do
+            COMMIT_COUNT=$((COMMIT_COUNT + 1))
+            VERSION="1.0.${COMMIT_COUNT}"
+          done
+          git tag $VERSION
+          git push origin $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "::set-output name=version::$VERSION"
+
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Checkout Repository
@@ -30,40 +69,56 @@ jobs:
         run: |
           pytest ./tests  
 
-  build:
-    name: Build Docker Image for Minikube
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Set Up Minikube
-        run: |
-          curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          chmod +x minikube
-          sudo mv minikube /usr/local/bin/
-          minikube start --driver=docker
-
-      - name: Build Docker Image Inside Minikube
-        run: |
-          eval $(minikube docker-env)  # מחבר את Docker ל-Minikube
-          docker build -t finel_project-web:latest .
-
   deploy:
-    name: Deploy to Minikube
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, test]
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set Up Minikube
+      - name: Authenticate with GCP
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
-          minikube start --driver=docker
+          echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+          gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+          gcloud config set project devops-451510
 
-      - name: Deploy with Helm to Minikube
+      - name: Install Helm
         run: |
-          helm upgrade --install finel-project ./helm-chart -f helm-chart/values.yaml
+          curl https://get.helm.sh/helm-v3.10.3-linux-amd64.tar.gz -o helm.tar.gz
+          tar -zxvf helm.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/
+          helm version
+
+      - name: Install Terraform
+        run: |
+          wget https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+          unzip terraform_1.7.5_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+          terraform --version
+
+      - name: Get GKE cluster credentials
+        run: |
+          gcloud container clusters get-credentials flask-cluster \
+            --zone us-central1-a --project devops-451510
+          kubectl config current-context
+          kubectl config view
+
+      - name: Build and Push Docker Image
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          IMAGE_NAME="us-central1-docker.pkg.dev/devops-451510/my-docker-repo/project-flask-app:$VERSION"
+          docker build -t $IMAGE_NAME --build-arg VERSION=$VERSION .
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          docker push $IMAGE_NAME
+
+      - name: Deploy to Kubernetes with Helm
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          IMAGE_NAME="us-central1-docker.pkg.dev/devops-451510/my-docker-repo/project-flask-app:$VERSION"
+          helm upgrade --install flask-app-release ./helm/flask-app --namespace default --set image.tag=$VERSION
+          kubectl get pods -o wide
