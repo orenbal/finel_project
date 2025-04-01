@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout Repository  # הורדת קוד הריפו
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python  # התקנת גרסת פייתון מתאימה
         uses: actions/setup-python@v3
@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout Repository  # הורדת קוד הריפו
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python  # התקנת גרסת פייתון
         uses: actions/setup-python@v3
@@ -75,7 +75,7 @@ jobs:
 
     steps:
       - name: Checkout Repository  # הורדת קוד הריפו
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Authenticate with GCP  # אימות מול Google Cloud Platform
         env:
